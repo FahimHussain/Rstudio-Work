@@ -1,0 +1,42 @@
+---
+title: "Homework 1"
+author: "Fahim Hussain"
+date: "August 28, 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r echo=TRUE, results='hide', warning=FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+ggplot(data=mpg)
+```
+
+**1) There is nothing to see when I run ggplot(data=mpg). I need to provide a visualization to ggplot to show the dta.**
+
+```{r}
+nrow(mpg)
+ncol(mpg)
+```
+**2) There are 234 rows and 11 columns in the mpg dataset.**
+
+```{r}
+?mpg
+```
+
+**3) The drv variable is a categorical value that tells you whether the car is a front-wheel drive, f, a rear wheel drive, r, or a 4 wheel drive, 4.**
+
+```{r}
+ggplot(data=mpg, aes(x=cyl, y=hwy))+ geom_point()
+```
+
+**4) Graph above**
+
+```{r}
+ggplot(data=mpg, aes(x=class, y=drv)) + geom_point()
+```
+
+**5) This plot is not useful because there is no significant analysis in examining the relationship of a car's class and its drv. It also does not utilize our entire dataset efficiently because there are only 12 data points in the chart.**  

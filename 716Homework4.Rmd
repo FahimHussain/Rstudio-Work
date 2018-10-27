@@ -1,0 +1,111 @@
+---
+title: "STAT 716 Homework 4"
+author: "Fahim Hussain"
+date: "October 6, 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r include = FALSE}
+library(ggplot2)
+library(MASS)
+library(dplyr)
+library(caTools)
+attach(Boston)
+library(class)
+```
+
+```{r echo=TRUE, results=FALSE}
+median(Boston$crim)
+Boston %>% select(crim) %>% nrow
+crim01 <- 1:506
+crim01[Boston$crim > median(Boston$crim)] <-1
+crim01[Boston$crim <= median(Boston$crim)] <- 0
+Nboston <- Boston %>% mutate(crim01)
+```
+
+```{r}
+glimpse(Nboston)
+```
+
+```{r fig.width= 12, fig.height=12}
+pairs(Nboston)
+```
+
+####This graph is to help me see some relationship between the variables.
+
+```{r}
+set.seed(13)
+sample <- sample.split(Nboston$crim, SplitRatio = 0.5)
+train <- subset(Nboston, sample==TRUE)
+test <- subset(Nboston, sample==FALSE)
+crim01.test <- crim01[sample]
+```
+
+####I decided to split my dataset into a training set and test set with 50% of the data assigned to each set because my dataset is not too large. I decided to pursue a training set and test set because I would like to see how well the models I create will do in the training test and apply in the test set. If I don't create a training set and test set, then I will not be able to tell if my model overfitted my data or if my models are significant. My only concern is that my training set will only contain half of the data set, which is derived from an already small dataset. This might have a major impact on the QDA.
+
+#LDA
+
+```{r}
+ldafit <- lda(crim01 ~.-crim01-crim, data=train)
+ldapred <- predict(ldafit, data=test)
+table(ldapred$class, crim01.test)
+mean(ldapred$class != crim01.test)
+```
+
+####I fitted my LDA by doing the analysis with my dependent variable being the crime variable, where 0 signifies that crime is less than the median of the crime in the original dataset and 1 representing crime being more than the median of the crime in the original dataset. My independent variables exclude my dependent variable and the orignal crime data because it wil cause my error rate of the LDA to rise. The test error of my model is 13.04%. This is coming from doing the model in the training set and fitting the model in the test set. What my output is saying is that it correctly identified 132 areas where the crime rate is less than the median crime rate and 88 areas where the crime rate is more than the median crime rate. However, 30 areas have been incorrectly assigned as having a lower median crime rate, when in actuality, it has a higher than median crime rate,  which is a huge error.
+
+
+#QDA
+```{r}
+qdafit <- qda(crim01 ~.-crim01-crim, data=train)
+qdapred <- predict(qdafit, data=test)
+table(qdapred$class, crim01.test)
+mean(qdapred$class != crim01.test)
+```
+
+####QDA provides us with the lowest rate at 10.67%. This is a great rate and it fits the model well. We can see that it correctly predicted crime rates that are below the median crime rate extremely well. It also got 93 rates that are above the median correctly. This performed better than the LDA and will most likely perform better than the Logistic Regression.
+
+#Logistic Regression
+
+```{r warning=FALSE}
+glmfit <- glm(crim01 ~.-crim-crim01, family=binomial, data=train)
+summary(glmfit)
+
+```
+
+####Seems that the most significant predictors are nox, dis, rad, tax, and black.
+
+```{r}
+glmprob <- predict(glmfit, test, type="response")
+glm.pred <- rep(0,253)
+glm.pred[glmprob>0.5]<-1
+table(glm.pred, crim01.test)
+mean(glm.pred != crim01.test)
+
+```
+
+####I get an error rate of 20.55%. For the logistic regression, I am correctly identifying 98 areas where crime is less than the median and 103 areas where crime is more than the median. However, my errors are far higher than when I used the LDA model. Because of this error rate, the LDA is a better choice for this dataset. 
+
+#KNN
+
+```{r}
+train.x <- cbind(zn, indus, chas, nox, rm, age, dis, rad, tax, ptratio, black, lstat, medv)[sample, ]
+test.x <- cbind(zn, indus, chas, nox, rm, age, dis, rad, tax, ptratio, black, lstat, medv)[!sample, ]
+train.crim01 <- crim01[sample]
+set.seed(14)
+predknn <- knn(train.x,test.x,train.crim01, k=1)
+table(predknn, crim01.test)
+mean(predknn != crim01.test)
+```
+
+####With k=1, we have a 22.53% error. This is a high error and increasing k will most likely reduce the error.
+
+```{r}
+set.seed(14)
+predknn <- knn(train.x,test.x,train.crim01, k=10)
+table(predknn, crim01.test)
+mean(predknn != crim01.test)
+```
+
+####Seems as though increasing k does not lower the error rate. The KNN method performed worst among all the other methods. This could be because of the split I did on my dataset, which was already small in the first place. KNN will probably have done better if I had a larger dataset, or if I had done a smaller ratio split between train and test set.
